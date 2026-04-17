@@ -30,9 +30,17 @@ def exercise_2_1():
     # 3. In ra các giá trị lấy được
     # 4. In ra "NOT FOUND" nếu biến không tồn tại
     
+
     # Gợi ý: os.getenv("VARIABLE_NAME", "default_value")
+    data1 = os.getenv("GITHUB_API_URL")
+    data2 = os.getenv("REQUEST_TIMEOUT")
     
-    pass
+    # In ra GITHUB_API_URL
+    print("GITHUB_API_URL:", data1 if data1 else "NOT FOUND")
+    
+    # In ra REQUEST_TIMEOUT
+    print("REQUEST_TIMEOUT:", data2 if data2 else "NOT FOUND")
+
 
 
 # ============================================
@@ -55,7 +63,8 @@ def exercise_2_2():
     # 5. Nếu tồn tại, in ra "✓ API Key được tải thành công"
     #    (KHÔNG in ra giá trị thực của key!)
     
-    pass
+    data1 = os.getenv("OPENWEATHER_API_KEY")
+    print ("✓ API Key được tải thành công") if data1 else print("⚠️ API Key chưa được cấu hình")
 
 
 # ============================================
@@ -76,8 +85,12 @@ def get_api_base_url(service_name):
     # 2. Tạo key như: "{SERVICE_NAME}_URL"
     # 3. Lấy giá trị từ os.getenv()
     # 4. Return URL hoặc None
-    
-    pass
+    name = (service_name).upper()
+    key = f"{name}_URL"
+    return os.getenv(key)
+
+
+
 
 
 def exercise_2_3():
@@ -95,54 +108,46 @@ def exercise_2_3():
     # 2. Gọi get_api_base_url("github") - nên trả về URL
     # 3. Gọi get_api_base_url("unknown") - nên trả về None
     # 4. In ra kết quả
-    
-    pass
+    print(get_api_base_url("github"))
+    print(get_api_base_url("unknown"))
 
 
 # ============================================
 # BÀI TẬP 2.4: Xây dựng API Client Class
 # ============================================
 class APIClient:
-    """
-    Lớp để quản lý API requests với keys từ .env
-    """
-    
     def __init__(self, service_name, api_key_name=None):
-        """
-        TODO: Implement __init__
-        1. Lưu service_name
-        2. Lấy base_url từ .env (hoặc sử dụng get_api_base_url)
-        3. Lấy API key từ .env nếu api_key_name được cung cấp
-        4. Kiểm tra xem base_url có tồn tại không
-        """
-        pass
-    
+        self.service_name = service_name
+        self.base_url = get_api_base_url(service_name)
+        self.api_key = os.getenv(api_key_name) if api_key_name else None
+        
+        if not self.base_url:
+            raise ValueError(f"❌ Không tìm thấy base URL cho {service_name}")
+
     def get(self, endpoint, timeout=10):
-        """
-        TODO: Implement GET method
-        1. Kết hợp base_url + endpoint
-        2. Gọi requests.get() với timeout
-        3. Trả về response object hoặc raise exception
-        4. Xử lý connection errors
-        """
-        pass
+        url = self.base_url + endpoint
+        try:
+            response = requests.get(url, timeout=timeout)
+            response.raise_for_status()
+            return response
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Lỗi kết nối: {e}")
+            raise
 
 
 def exercise_2_4():
-    """
-    Sử dụng APIClient class
-    """
-    print("\n" + "=" * 50)
-    print("BÀI TẬP 2.4: API Client Class")
-    print("=" * 50)
-    
-    # TODO:
-    # 1. Tạo instance của APIClient cho github service
-    # 2. Gọi .get("/users/torvalds") để lấy thông tin Linus Torvalds
-    # 3. In ra name, bio, followers
-    # 4. Xử lý các lỗi có thể xảy ra
-    
-    pass
+    try:
+        client = APIClient("github")
+        response = client.get("/users/torvalds")
+        data = response.json()  # ← Convert to dict!
+        
+        print(f"Name: {data.get('name', 'N/A')}")
+        print(f"Bio: {data.get('bio', 'N/A')}")
+        print(f"Followers: {data.get('followers', 'N/A')}")
+    except ValueError as e:
+        print(f"❌ Lỗi cấu hình: {e}")
+    except Exception as e:
+        print(f"❌ Lỗi: {e}")
 
 
 # ============================================

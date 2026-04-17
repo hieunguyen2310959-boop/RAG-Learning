@@ -112,8 +112,13 @@ def exercise_1_4():
     # 3. In ra 2 posts đầu tiên
     
     # Gợi ý: dùng params={"userId": 2} trong requests.get()
-    
-    pass
+    URL = "https://jsonplaceholder.typicode.com/posts"
+    response = requests.get(URL, params={"userId": 2})
+    data = response.json()
+    print(len(data))
+    print(data[0:2])
+
+
 
 
 # ============================================
@@ -133,8 +138,16 @@ def exercise_1_5():
     # 2. Thêm User-Agent header (GitHub API yêu cầu)
     #    headers = {"User-Agent": "MyApp/1.0"}
     # 3. In ra thông tin: name, bio, public_repos, followers
+    URL = "https://api.github.com/users/torvalds"
+    headers = {"User-Agent": "MyApp/1.0"}
+    response = requests.get(URL, headers=headers)
+    data = response.json()
     
-    pass
+    print(f"Name: {data['name']}")
+    print(f"Bio: {data['bio']}")
+    print(f"Public Repos: {data['public_repos']}")
+    print(f"Followers: {data['followers']}")
+
 
 
 # ============================================
@@ -159,8 +172,14 @@ def exercise_1_6():
     # 4. Kiểm tra status code (nên là 201 Created)
     
     # Gợi ý: sử dụng requests.post() với json=data
-    
-    pass
+    URL = "https://jsonplaceholder.typicode.com/posts"
+    json = {
+        "title": "Bài viết của tôi",
+        "body": "Nội dung bài viết",
+        "userId":1
+    }
+    data = requests.post(URL,json)
+    print(data.status_code)
 
 
 # ============================================
