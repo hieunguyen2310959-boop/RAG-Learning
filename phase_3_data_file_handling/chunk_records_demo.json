@@ -1,0 +1,26 @@
+[
+  {
+    "chunk_id": "sample_document_chunk_0",
+    "text": "Chunk one text for demo.",
+    "source": "sample_document.txt",
+    "page_number": 1,
+    "chunk_index": 0,
+    "created_at": "2026-04-27T03:10:43.578370+00:00"
+  },
+  {
+    "chunk_id": "sample_document_chunk_1",
+    "text": "Chunk two text for demo.",
+    "source": "sample_document.txt",
+    "page_number": 1,
+    "chunk_index": 1,
+    "created_at": "2026-04-27T03:10:43.578370+00:00"
+  },
+  {
+    "chunk_id": "sample_document_chunk_2",
+    "text": "Chunk three text for demo.",
+    "source": "sample_document.txt",
+    "page_number": 1,
+    "chunk_index": 2,
+    "created_at": "2026-04-27T03:10:43.578370+00:00"
+  }
+]
