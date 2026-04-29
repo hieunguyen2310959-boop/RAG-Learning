@@ -17,6 +17,12 @@ Tai lieu nay duoc sap xep theo roadmap trong PDF (6 phases).
   - README_API_EXERCISES.md
 - phase_3_data_file_handling/
 - phase_4_ai_llm_core_concepts/
+  - exercise_1_llm_api_basics.py
+  - exercise_2_prompt_engineering.py
+  - exercise_3_text_embeddings.py
+  - exercise_4_token_context_management.py
+  - exercise_5_mini_qa_pipeline.py
+  - README_LLM_EXERCISES.md
 - phase_5_vector_databases_retrieval/
 - phase_6_build_rag_app/
 - roadmap_reference/
@@ -25,4 +31,5 @@ Tai lieu nay duoc sap xep theo roadmap trong PDF (6 phases).
 ## Ghi chu
 
 - Theo yeu cau, toan bo 5 bai API da duoc gom vao 1 folder duy nhat: phase_2_apis_backend_basics.
-- Cac phase 3 -> 6 da duoc tao san folder de bo sung bai tap sau.
+- Phase 4 da co day du 5 bai tap + README trong phase_4_ai_llm_core_concepts/.
+- Cac phase 5, 6 da duoc tao san folder de bo sung bai tap sau.
