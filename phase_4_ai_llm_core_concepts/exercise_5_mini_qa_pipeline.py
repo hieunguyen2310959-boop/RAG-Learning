@@ -103,8 +103,15 @@ def create_pipeline(
         1. Goi load_model(model_name) -> model
         2. Tao va return QAPipeline(model=model, model_name=model_name, ...)
     """
-    # TODO: implement
-    raise NotImplementedError("Implement create_pipeline")
+    model = load_model(model_name)
+    return QAPipeline(
+        model=model,
+        model_name=model_name,
+        llm_model=llm_model,
+        max_context_tokens=max_context_tokens,
+        top_k=top_k,
+    )
+
 
 
 def ingest_texts(pipeline: QAPipeline, texts: list[str]) -> None:
@@ -117,7 +124,9 @@ def ingest_texts(pipeline: QAPipeline, texts: list[str]) -> None:
         2. pipeline.index = embed_texts(texts, pipeline.model)
     """
     # TODO: implement
-    raise NotImplementedError("Implement ingest_texts")
+    pipeline.corpus = texts
+    pipeline.index = embed_texts(texts, pipeline.model)
+
 
 
 def ingest_file(pipeline: QAPipeline, path: Path, chunk_size: int = 150) -> int:
@@ -135,9 +144,13 @@ def ingest_file(pipeline: QAPipeline, path: Path, chunk_size: int = 150) -> int:
         4. Goi ingest_texts(pipeline, chunks)
         5. Return len(chunks)
     """
-    # TODO: implement
-    raise NotImplementedError("Implement ingest_file")
-
+    text = path.read_text(encoding="utf-8")
+    words = text.split()
+    chunks = []
+    for i in range(0, len(words), chunk_size):
+        chunks.append(" ".join(words[i : i + chunk_size]))
+    ingest_texts(pipeline, chunks)
+    return len(chunks)
 
 # -----------------------------------------------------------------------
 # Exercise 5.2 - Retrieval
@@ -156,8 +169,11 @@ def retrieve(pipeline: QAPipeline, query: str) -> list[tuple[float, str]]:
         4. Return [(score, pipeline.corpus[i]) for i in top_k_indices]
     Hint: np.argsort(scores)[::-1][:pipeline.top_k]
     """
-    # TODO: implement
-    raise NotImplementedError("Implement retrieve")
+    query_emb = embed_texts([query], pipeline.model)[0]
+    scores = np.array([cosine_similarity(query_emb, emb) for emb in pipeline.index])
+    top_k_indices = np.argsort(scores)[::-1][: pipeline.top_k]
+    return [(float(scores[i]), pipeline.corpus[i]) for i in top_k_indices]
+
 
 
 # -----------------------------------------------------------------------
@@ -186,8 +202,35 @@ def generate_answer(
         4. Goi chat_completion(messages, temperature=0.2, max_tokens=400)
         5. Return (extract_reply(response), response.get("usage", {}))
     """
-    # TODO: implement
-    raise NotImplementedError("Implement generate_answer")
+    chunk_texts = [text for _, text in top_chunks]
+    context = build_context_within_limit(
+        chunk_texts,
+        max_context_tokens=pipeline.max_context_tokens,
+        model=pipeline.llm_model,
+    )
+
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "Tra loi cau hoi chi dua vao tai lieu duoi day. "
+                "Neu khong co thong tin, noi 'Khong tim thay trong tai lieu.'"
+            ),
+        }
+    ]
+
+    if use_history:
+        messages.extend(pipeline.history)
+
+    messages.append(
+        {
+            "role": "user",
+            "content": f"Tai lieu:\n{context}\n\nCau hoi: {question}",
+        }
+    )
+
+    response = chat_completion(messages, temperature=0.2, max_tokens=400)
+    return (extract_reply(response), response.get("usage", {}))
 
 
 # -----------------------------------------------------------------------
@@ -207,8 +250,20 @@ def ask(pipeline: QAPipeline, question: str, use_history: bool = False) -> QARes
                            input_tokens=usage.get("prompt_tokens", 0),
                            output_tokens=usage.get("completion_tokens", 0))
     """
-    # TODO: implement
-    raise NotImplementedError("Implement ask")
+    top_chunks = retrieve(pipeline, question)
+    answer, usage = generate_answer(pipeline, question, top_chunks, use_history)
+
+    if use_history:
+        pipeline.history.append({"role": "user", "content": question})
+        pipeline.history.append({"role": "assistant", "content": answer})
+
+    return QAResult(
+        question=question,
+        answer=answer,
+        top_chunks=top_chunks,
+        input_tokens=usage.get("prompt_tokens", 0),
+        output_tokens=usage.get("completion_tokens", 0),
+    )
 
 
 # -----------------------------------------------------------------------
@@ -229,8 +284,20 @@ def save_results(results: list[QAResult], output_path: Path) -> None:
            }
         2. json.dump(records, ..., ensure_ascii=False, indent=2)
     """
-    # TODO: implement
-    raise NotImplementedError("Implement save_results")
+    records = []
+    for result in results:
+        record = {
+            "question": result.question,
+            "answer": result.answer,
+            "top_chunks": [{"score": score, "text": text} for score, text in result.top_chunks],
+            "input_tokens": result.input_tokens,
+            "output_tokens": result.output_tokens,
+        }
+        records.append(record)
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(records, f, ensure_ascii=False, indent=2)
+    
 
 
 def print_result(result: QAResult) -> None:
@@ -245,8 +312,13 @@ def print_result(result: QAResult) -> None:
           [score] chunk_text[:80]
         Tokens: input=X, output=Y
     """
-    # TODO: implement
-    raise NotImplementedError("Implement print_result")
+    print(f"Q: {result.question}")
+    print(f"A: {result.answer}")
+    print("Top chunks:")
+    for score, text in result.top_chunks:
+        print(f"  [{score:.4f}] {text[:80]}")
+    print(f"Tokens: input={result.input_tokens}, output={result.output_tokens}")
+    print()
 
 
 # -----------------------------------------------------------------------

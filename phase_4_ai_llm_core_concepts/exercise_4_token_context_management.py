@@ -60,8 +60,10 @@ def count_tokens(text: str, model: str = "gpt-4o-mini") -> int:
         3. return len(enc.encode(text))
     Hint: tiktoken.get_encoding("cl100k_base") luon hoat dong.
     """
-    # TODO: implement
-    raise NotImplementedError("Implement count_tokens")
+    model_config = MODEL_INFO.get(model, MODEL_INFO["gpt-4o-mini"])
+    encoding_name = model_config.get("encoding", "cl100k_base")
+    enc = tiktoken.get_encoding(encoding_name)
+    return len(enc.encode(text))
 
 
 def count_messages_tokens(messages: list[dict], model: str = "gpt-4o-mini") -> int:
@@ -77,8 +79,14 @@ def count_messages_tokens(messages: list[dict], model: str = "gpt-4o-mini") -> i
         4. Return tong
     Hint: tham khao https://cookbook.openai.com/examples/how_to_count_tokens_with_tiktoken
     """
-    # TODO: implement
-    raise NotImplementedError("Implement count_messages_tokens")
+    total_tokens = 3  # Reply priming overhead.
+
+    for message in messages:
+        content = str(message.get("content", ""))
+        total_tokens += count_tokens(content, model=model)
+        total_tokens += 4  # Per-message overhead.
+
+    return total_tokens
 
 
 # -----------------------------------------------------------------------
@@ -108,8 +116,20 @@ def estimate_cost(
         3. Tinh output_cost tuong tu
         4. Return dict
     """
-    # TODO: implement
-    raise NotImplementedError("Implement estimate_cost")
+    model_name = model if model in MODEL_INFO else "gpt-4o-mini"
+    model_config = MODEL_INFO[model_name]
+
+    input_cost = (input_tokens / 1000) * model_config["input_price_per_1k"]
+    output_cost = (output_tokens / 1000) * model_config["output_price_per_1k"]
+
+    return {
+        "model": model_name,
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "input_cost_usd": input_cost,
+        "output_cost_usd": output_cost,
+        "total_cost_usd": input_cost + output_cost,
+    }
 
 
 # -----------------------------------------------------------------------
@@ -126,8 +146,14 @@ def truncate_to_token_limit(text: str, max_tokens: int, model: str = "gpt-4o-min
         3. Neu qua dai: cat tokens[:max_tokens] roi decode lai
            Hint: enc.decode(tokens[:max_tokens])
     """
-    # TODO: implement
-    raise NotImplementedError("Implement truncate_to_token_limit")
+    model_config = MODEL_INFO.get(model, MODEL_INFO["gpt-4o-mini"])
+    encoding_name = model_config.get("encoding", "cl100k_base")
+    enc = tiktoken.get_encoding(encoding_name)
+
+    tokens = enc.encode(text)
+    if len(tokens) <= max_tokens:
+        return text
+    return enc.decode(tokens[:max_tokens])
 
 
 # -----------------------------------------------------------------------
@@ -151,8 +177,16 @@ def build_context_within_limit(
         5. Return context string cuoi cung
     Hint: tinh toan truoc: token cua separator khoang 4-6 tokens.
     """
-    # TODO: implement
-    raise NotImplementedError("Implement build_context_within_limit")
+    selected: list[str] = []
+
+    for chunk in chunks:
+        candidate = separator.join(selected + [chunk]) if selected else chunk
+        if count_tokens(candidate, model=model) <= max_context_tokens:
+            selected.append(chunk)
+        else:
+            break
+
+    return separator.join(selected)
 
 
 # -----------------------------------------------------------------------
@@ -187,8 +221,31 @@ def analyze_request(
         6. Goi estimate_cost
         7. Return dict
     """
-    # TODO: implement
-    raise NotImplementedError("Implement analyze_request")
+    model_name = model if model in MODEL_INFO else "gpt-4o-mini"
+    model_config = MODEL_INFO[model_name]
+
+    input_tokens = count_messages_tokens(messages, model=model_name)
+    total_expected_tokens = input_tokens + expected_output_tokens
+    context_window = model_config["context_window"]
+    context_usage_pct = total_expected_tokens / context_window * 100
+    fits_in_context = total_expected_tokens <= context_window
+
+    cost = estimate_cost(
+        input_tokens=input_tokens,
+        output_tokens=expected_output_tokens,
+        model=model_name,
+    )
+
+    return {
+        "model": model_name,
+        "context_window": context_window,
+        "input_tokens": input_tokens,
+        "expected_output_tokens": expected_output_tokens,
+        "total_expected_tokens": total_expected_tokens,
+        "context_usage_pct": round(context_usage_pct, 4),
+        "fits_in_context": fits_in_context,
+        "estimated_cost": cost,
+    }
 
 
 # -----------------------------------------------------------------------
